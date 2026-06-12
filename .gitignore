@@ -1,0 +1,75 @@
+# Этот .gitignore должен находиться в корневой папке проекта Unity
+# Актуальная версия: https://github.com/github/gitignore/blob/main/Unity.gitignore
+
+# --- Папки, генерируемые Unity (их можно безопасно удалять, Unity создаст их заново) ---
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+
+# Папки, которые могут занимать много места или содержать чувствительные данные
+[Mm]emoryCaptures/
+[Rr]ecordings/
+
+# --- Файлы и папки сред разработки (IDE) ---
+# Visual Studio
+.vs/
+*.csproj
+*.unityproj
+*.sln
+*.suo
+*.tmp
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# JetBrains Rider / IntelliJ
+.idea/
+*.sln.iml
+
+# Visual Studio Code
+.vscode/
+
+# --- Автогенерируемые файлы Unity ---
+*.pidb.meta
+*.pdb.meta
+*.mdb.meta
+sysinfo.txt
+
+# --- Файлы сборок и экспорта (не нужны в репозитории) ---
+*.apk
+*.aab
+*.ipa
+*.unitypackage
+*.app
+*.exe
+*.dll
+
+# --- Плагины и специфичные данные ---
+# Раскомментируй строку ниже, если используешь Asset Store Tools и не хочешь пушить его
+# /[Aa]ssets/AssetStoreTools*
+
+# Автогенерируемый плагин JetBrains Rider
+/[Aa]ssets/Plugins/Editor/JetBrains*
+
+# Gradle cache (для Android билдов)
+.gradle/
+
+# Crashlytics
+crashlytics-build.properties
+
+# Packed Addressables (если используешь эту систему)
+/[Aa]ssets/[Aa]ddressable[Aa]ssets[Dd]ata/*/*.bin*
+
+# Временные Android Assets
+/[Aa]ssets/[Ss]treamingAssets/aa.meta
+/[Aa]ssets/[Ss]treamingAssets/aa/*
