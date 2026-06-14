@@ -4,11 +4,12 @@ public class LapCounter : MonoBehaviour
 {
     [Header("Настройки гонки")]
     public int totalLapsToWin = 1; // Сколько кругов нужно для победы
-    public int totalCheckpointsOnTrack = 4; // Сколько чекпоинтов на трассе (не считая финиш)
+    public int totalCheckpointsOnTrack = 7; // Сколько чекпоинтов на трассе (не считая финиш)
 
     [Header("Состояние гонки")]
     public int currentLap = 0;
-    private int nextRequiredCheckpointID = 1; // Какой чекпоинт мы ждём сейчас (1, 2, 3...)
+    public int nextRequiredCheckpointID = 1;
+    public Transform lastCheckpoint;
     private bool hasFinished = false;
 
 
@@ -24,8 +25,8 @@ public class LapCounter : MonoBehaviour
             // Проверяем, тот ли это чекпоинт, который мы ждём
             if (cp.checkpointID == nextRequiredCheckpointID)
             {
-                Debug.Log("Чекпоинт " + nextRequiredCheckpointID + " пройден!");
-                nextRequiredCheckpointID++; // Теперь ждём следующий
+                lastCheckpoint = cp.transform;
+                nextRequiredCheckpointID++;
             }
             else
             {

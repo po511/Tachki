@@ -29,7 +29,7 @@ public class IsGroundCar : MonoBehaviour
     {
         if (restartPosition)
         {
-            if (Input.GetKeyDown(KeyCode.F) && delayCurent <= 0)
+            if (Input.GetKeyDown(flipKey) && delayCurent <= 0)
             {
                 delayCurent = delay;
                 InvokeRepeating(nameof(DelayInvoke), 0, 1);
