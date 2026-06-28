@@ -3,21 +3,22 @@ using UnityEngine;
 public class SimpleCarController : MonoBehaviour
 {
     [Header("Настройки")]
-    public float maxSpeed = 30f;
-    public float acceleration = 12f;
+    public float MaxSpeed = 30f;
+    public float Acceleration = 12f;
     public float turnSpeed = 100f;
-    public float brakeForce = 9f;
+    public float BrakeForce = 9f;
     [SerializeField] IsGroundCar IsGroundCar;
 
     [Header("Физика")]
     public float centerOfMassOffset = -0.3f;
 
+    [Header("Ватность (инерция)")]
+    public float velocitySmooth = 8f;       // плавность скорости (меньше = ватнее)
+    public float steerSmooth = 3f;          // плавность руля (меньше = ватнее)
+
     [Header("Дрифт")]
-    public float maxDriftAngle = 30f;       // макс. угол заноса (градусы)
-    public float driftAngleSpeed = 3f;      // как быстро меняется угол
-    public float handbrakeTurn = 1.5f;      // острота руля в дрифте
-    public KeyCode handbrakeKey = KeyCode.Space;
-    public KeyCode handbrakeKey2 = KeyCode.LeftShift;
+    public float maxDriftAngle = 30f;
+    public float driftAngleSpeed = 3f;
 
     [Header("Визуальные колёса")]
     public Transform wheelFL, wheelFR, wheelRL, wheelRR;
@@ -34,10 +35,9 @@ public class SimpleCarController : MonoBehaviour
     private float currentSteerAngle = 0f;
 
     public float gasInput = 0f;
-    private float steerInput = 0f;
-    private bool isHandbraking = false;
+    private float rawSteerInput = 0f;
+    private float smoothSteer = 0f;
     private float driftAngle = 0f;
-    public bool IsDrifting => isHandbraking && Mathf.Abs(currentSpeed) > 5f;
 
     private Vector3 initialLocalPosition;
     private Quaternion initialLocalRotation;
@@ -58,67 +58,64 @@ public class SimpleCarController : MonoBehaviour
     void FixedUpdate()
     {
         gasInput = 0f;
-        steerInput = 0f;
-        isHandbraking = false;
+        rawSteerInput = 0f;
 
-        // --- ввод 1P (стрелки + Space) и 2P (WASD + Shift) ---
+        // --- ввод 1P (стрелки) и 2P (WASD) ---
         if (playerIndex == 2)
         {
             if (Input.GetKey(KeyCode.W)) gasInput = 1f;
             else if (Input.GetKey(KeyCode.S)) gasInput = -1f;
-            if (Input.GetKey(KeyCode.A)) steerInput = -1f;
-            else if (Input.GetKey(KeyCode.D)) steerInput = 1f;
-            if (Input.GetKey(handbrakeKey2)) isHandbraking = true;
+            if (Input.GetKey(KeyCode.A)) rawSteerInput = -1f;
+            else if (Input.GetKey(KeyCode.D)) rawSteerInput = 1f;
         }
         else if (playerIndex == 1)
         {
             if (Input.GetKey(KeyCode.UpArrow)) gasInput = 1f;
             else if (Input.GetKey(KeyCode.DownArrow)) gasInput = -1f;
-            if (Input.GetKey(KeyCode.LeftArrow)) steerInput = -1f;
-            else if (Input.GetKey(KeyCode.RightArrow)) steerInput = 1f;
-            if (Input.GetKey(handbrakeKey)) isHandbraking = true;
+            if (Input.GetKey(KeyCode.LeftArrow)) rawSteerInput = -1f;
+            else if (Input.GetKey(KeyCode.RightArrow)) rawSteerInput = 1f;
         }
+
+        // --- плавный руль (инерция поворота) ---
+        smoothSteer = Mathf.Lerp(smoothSteer, rawSteerInput, Time.fixedDeltaTime * steerSmooth);
 
         // --- разгон / торможение ---
         if (gasInput > 0)
-            currentSpeed = Mathf.Min(currentSpeed + acceleration * Time.fixedDeltaTime, maxSpeed);
+            currentSpeed = Mathf.Min(currentSpeed + Acceleration * Time.fixedDeltaTime, MaxSpeed);
         else if (gasInput < 0)
-            currentSpeed = Mathf.Max(currentSpeed - brakeForce * Time.fixedDeltaTime, -maxSpeed / 2f);
+            currentSpeed = Mathf.Max(currentSpeed - BrakeForce * Time.fixedDeltaTime, -MaxSpeed / 2f);
         else
-            currentSpeed = Mathf.MoveTowards(currentSpeed, 0, acceleration * 0.5f * Time.fixedDeltaTime);
+            currentSpeed = Mathf.MoveTowards(currentSpeed, 0, Acceleration * 0.5f * Time.fixedDeltaTime);
 
-        // --- дрифт-угол: кузов смотрит в одну сторону, а машина едет под углом ---
+        // --- дрифт-угол ---
         float targetDriftAngle = 0f;
 
-        if (isHandbraking && Mathf.Abs(currentSpeed) > 3f)
-            targetDriftAngle = -steerInput * maxDriftAngle;                // ручник: сильный занос
-        else if (Mathf.Abs(steerInput) > 0.1f && Mathf.Abs(currentSpeed) > 5f)
-            targetDriftAngle = -steerInput * maxDriftAngle * 0.4f;         // без ручника: лёгкий снос
+        if (Mathf.Abs(smoothSteer) > 0.1f && Mathf.Abs(currentSpeed) > 5f)
+            targetDriftAngle = -smoothSteer * maxDriftAngle * 0.4f;
 
         driftAngle = Mathf.Lerp(driftAngle, targetDriftAngle, Time.fixedDeltaTime * driftAngleSpeed);
 
-        // машина движется в направлении, повёрнутом на driftAngle от кузова
+        // --- движение с инерцией ---
         Vector3 moveDir = Quaternion.AngleAxis(driftAngle, Vector3.up) * transform.forward;
         Vector3 targetVel = moveDir * currentSpeed;
         targetVel.y = rb.linearVelocity.y;
-        rb.linearVelocity = targetVel;
+
+        rb.linearVelocity = Vector3.Lerp(rb.linearVelocity, targetVel, Time.fixedDeltaTime * velocitySmooth);
 
         // --- поворот кузова ---
         if (Mathf.Abs(currentSpeed) > 0.5f)
         {
-            // на скорости поворот слабее (надо притормаживать)
-            float understeer = 1f - (Mathf.Abs(currentSpeed) / maxSpeed) * 0.5f;
+            float understeer = 1f - (Mathf.Abs(currentSpeed) / MaxSpeed) * 0.5f;
             understeer = Mathf.Clamp(understeer, 0.4f, 1f);
 
-            float turn = steerInput * turnSpeed * Time.fixedDeltaTime * understeer;
-            if (IsDrifting) turn *= handbrakeTurn; // в дрифте руль острее
+            float turn = smoothSteer * turnSpeed * Time.fixedDeltaTime * understeer;
 
             if (currentSpeed < 0) turn = -turn;
             transform.Rotate(Vector3.up, turn, Space.World);
         }
 
         RotateWheels(currentSpeed);
-        SteerWheels(steerInput);
+        SteerWheels(smoothSteer);
     }
 
     void Update()
@@ -132,12 +129,11 @@ public class SimpleCarController : MonoBehaviour
             carBodyMesh.localPosition = Vector3.Lerp(carBodyMesh.localPosition, targetPos, Time.deltaTime * suspensionSmoothness);
 
             // крен кузова в повороте
-            float roll = -steerInput * 3f * (Mathf.Abs(currentSpeed) / maxSpeed);
-            if (IsDrifting) roll *= 2.5f; // в дрифте крен сильнее
+            float roll = -smoothSteer * 5f * (Mathf.Abs(currentSpeed) / MaxSpeed);
 
             // клёв при газе / торможении
             float pitch = 0f;
-            if (gasInput > 0) pitch = -2f * (currentSpeed / maxSpeed);
+            if (gasInput > 0) pitch = -2f * (currentSpeed / MaxSpeed);
             else if (gasInput < 0) pitch = 2f;
 
             Quaternion targetRot = initialLocalRotation * Quaternion.Euler(pitch, 0, roll);

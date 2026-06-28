@@ -29,7 +29,7 @@ public class CarAudio : MonoBehaviour
             engineSource.loop = true;
             engineSource.Play();
         }
-        speedThreshold = carController.maxSpeed / 2; // порог скорости после которого торможение приносит выхлопной взрыв
+        speedThreshold = carController.MaxSpeed / 2; // порог скорости после которого торможение приносит выхлопной взрыв
     }
 
     void Update()
@@ -44,7 +44,7 @@ public class CarAudio : MonoBehaviour
     {
         if (engineSource == null) return;
 
-        float t = Mathf.Abs(carController.currentSpeed) / carController.maxSpeed;
+        float t = Mathf.Abs(carController.currentSpeed) / carController.MaxSpeed;
         float target = Mathf.Lerp(minPitch, maxPitch, t);
         engineSource.pitch = Mathf.Lerp(engineSource.pitch, target, Time.deltaTime * smoothSpeed);
     }

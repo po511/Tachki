@@ -30,7 +30,7 @@ public class CameraEffects : MonoBehaviour
         if (carController == null) return;
 
         float speed = Mathf.Abs(carController.currentSpeed);
-        float t = speed / carController.maxSpeed;
+        float t = speed / carController.MaxSpeed;
 
         float targetFov = Mathf.Lerp(baseFov, maxFov, t);
         cam.fieldOfView = Mathf.Lerp(cam.fieldOfView, targetFov, Time.deltaTime * fovSmoothness);
