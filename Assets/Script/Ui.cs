@@ -1,4 +1,6 @@
 using System.Reflection;
+using Unity.VisualScripting;
+using UnityEditor.AnimatedValues;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -14,6 +16,9 @@ public class Ui : MonoBehaviour
     [SerializeField] SimpleCarController SimpleCarController2;
     [SerializeField] LapCounter LapCounter1;
     [SerializeField] LapCounter LapCounter2;
+    [SerializeField] Respawn Respawn1;
+    [SerializeField] Respawn Respawn2;
+    int baseValueLapForwWin;
 
 
     [Header("Hud")]
@@ -81,10 +86,10 @@ public class Ui : MonoBehaviour
         PauseControllUpdate();
         CarsTextStatusUpdate();
         // Текст в результатах гонки про лучшее время круга и худшее время круга
-        BestTimeText1Results.text = $"Best Time - {LapCounter1.bestLapTime}"; 
-        BestTimeText2Results.text = $"Best Time - {LapCounter2.bestLapTime}";
-        LowTimeText1Results.text = $"Worst Time - {LapCounter1.lowTimeLap}";
-        LowTimeText2Results.text = $"Worst Time - {LapCounter2.lowTimeLap}";
+        BestTimeText1Results.text = LapCounter1.bestLapTime.ToString(); 
+        BestTimeText2Results.text = LapCounter2.bestLapTime.ToString();
+        LowTimeText1Results.text = LapCounter1.lowTimeLap.ToString();
+        LowTimeText2Results.text = LapCounter2.lowTimeLap.ToString();
 
         // 1 Спидометр
         SpeedometrfillAmount1 = Mathf.Abs(SimpleCarController1.currentSpeed) / SimpleCarController1.MaxSpeed;
@@ -168,17 +173,18 @@ public class Ui : MonoBehaviour
 
     void PauseControllUpdate()
     {
-        if (Input.GetKeyDown(KeyCode.Escape) && !CanvasResults.activeInHierarchy)
+        if (Input.GetKeyDown(KeyCode.Escape) && !CanvasResults.activeInHierarchy && !CanvasCarDealership.activeInHierarchy)
         {
-
-            if(CanvasMenu.activeInHierarchy)
+            if (CanvasMenu.activeInHierarchy)
             {
                 CanvasMenu.SetActive(false);
                 CanvasHud.SetActive(true);
                 Time.timeScale = 1;
+                RestartSceneGame();
             }
             else
             {
+                baseValueLapForwWin = LapCounter1.totalLapsToWin;
                 CanvasMenu.SetActive(true);
                 CanvasHud.SetActive(false);
                 Time.timeScale = 0;
@@ -200,5 +206,28 @@ public class Ui : MonoBehaviour
         CanvasMenu.SetActive(false);
         CanvasResults.SetActive(false);
         CanvasCarDealership.SetActive(false);
+    }
+    public void RestartSceneGame()
+    {
+        if(!LapCounter1.hasFinished && !LapCounter2.hasFinished && baseValueLapForwWin == LapCounter1.totalLapsToWin) return;
+
+        SimpleCarController1.ResetCar(Respawn1.startPos, Respawn1.startRot);
+        SimpleCarController2.ResetCar(Respawn2.startPos, Respawn2.startRot);
+
+        LapCounter1.currentLap = 1;
+        LapCounter1.nextRequiredCheckpointID = 1;
+        LapCounter1.currentLapTime = 0;
+        LapCounter1.bestLapTime = 0;
+        LapCounter1.lapStartTime = Time.time;
+        LapCounter1.hasFinished = false;
+        LapCounter1.lowTimeLap = 0;
+
+        LapCounter2.currentLap = 1;
+        LapCounter2.nextRequiredCheckpointID = 1;
+        LapCounter2.currentLapTime = 0;
+        LapCounter2.bestLapTime = 0;
+        LapCounter2.lapStartTime = Time.time;
+        LapCounter2.hasFinished = false;
+        LapCounter2.lowTimeLap = 0;
     }
 }

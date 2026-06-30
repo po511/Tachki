@@ -38,14 +38,17 @@ public class SimpleCarController : MonoBehaviour
     private float rawSteerInput = 0f;
     private float smoothSteer = 0f;
     private float driftAngle = 0f;
+    private float totalForwardRotation = 0f;
+
 
     private Vector3 initialLocalPosition;
     private Quaternion initialLocalRotation;
-    public int playerIndex = 1;
+    public int PlayerIndex = 1;
 
     void Start()
     {
         rb = GetComponent<Rigidbody>();
+        rb.interpolation = RigidbodyInterpolation.Interpolate;
         rb.centerOfMass = new Vector3(0, centerOfMassOffset, 0);
 
         if (carBodyMesh != null)
@@ -61,14 +64,14 @@ public class SimpleCarController : MonoBehaviour
         rawSteerInput = 0f;
 
         // --- ввод 1P (стрелки) и 2P (WASD) ---
-        if (playerIndex == 2)
+        if (PlayerIndex == 2)
         {
             if (Input.GetKey(KeyCode.W)) gasInput = 1f;
             else if (Input.GetKey(KeyCode.S)) gasInput = -1f;
             if (Input.GetKey(KeyCode.A)) rawSteerInput = -1f;
             else if (Input.GetKey(KeyCode.D)) rawSteerInput = 1f;
         }
-        else if (playerIndex == 1)
+        else if (PlayerIndex == 1)
         {
             if (Input.GetKey(KeyCode.UpArrow)) gasInput = 1f;
             else if (Input.GetKey(KeyCode.DownArrow)) gasInput = -1f;
@@ -113,9 +116,7 @@ public class SimpleCarController : MonoBehaviour
             if (currentSpeed < 0) turn = -turn;
             transform.Rotate(Vector3.up, turn, Space.World);
         }
-
-        RotateWheels(currentSpeed);
-        SteerWheels(smoothSteer);
+        UpdateAllWheels(currentSpeed, smoothSteer);
     }
 
     void Update()
@@ -141,20 +142,36 @@ public class SimpleCarController : MonoBehaviour
         }
     }
 
-    void RotateWheels(float speed)
+    public void ResetCar(Vector3 position, Quaternion rotation)
     {
-        float rotation = speed * Time.fixedDeltaTime * 100f;
-        if (wheelFL) wheelFL.Rotate(rotation, 0, 0);
-        if (wheelFR) wheelFR.Rotate(rotation, 0, 0);
-        if (wheelRL) wheelRL.Rotate(rotation, 0, 0);
-        if (wheelRR) wheelRR.Rotate(rotation, 0, 0);
+        rb.linearVelocity = Vector3.zero;
+        rb.angularVelocity = Vector3.zero;
+
+        RigidbodyInterpolation prev = rb.interpolation;
+        rb.interpolation = RigidbodyInterpolation.None;
+
+        transform.SetPositionAndRotation(position, rotation);
+        rb.position = position;
+        rb.rotation = rotation;
+
+        rb.interpolation = prev;
+        currentSpeed = 0;
     }
 
-    void SteerWheels(float steer)
+    void UpdateAllWheels(float speed, float steerInput)
     {
-        float targetAngle = steer * 30f;
-        currentSteerAngle = Mathf.Lerp(currentSteerAngle, targetAngle, Time.deltaTime * 5f);
-        if (wheelFL) wheelFL.localRotation = Quaternion.Euler(0, currentSteerAngle, 0);
-        if (wheelFR) wheelFR.localRotation = Quaternion.Euler(0, currentSteerAngle, 0);
+        // Накопление угла вращения (абсолютный угол)
+        totalForwardRotation += speed * Time.fixedDeltaTime * 100f;
+
+        // Плавный руль
+        currentSteerAngle = Mathf.Lerp(currentSteerAngle, steerInput * 30f, Time.fixedDeltaTime * steerSmooth);
+
+        // Задние колёса — только вращение вокруг своей оси X
+        if (wheelRL) wheelRL.localEulerAngles = new Vector3(totalForwardRotation, 0, 0);
+        if (wheelRR) wheelRR.localEulerAngles = new Vector3(totalForwardRotation, 0, 0);
+
+        // Передние колёса — вращение + поворот руля вокруг оси Y
+        if (wheelFL) wheelFL.localEulerAngles = new Vector3(totalForwardRotation, currentSteerAngle, 0);
+        if (wheelFR) wheelFR.localEulerAngles = new Vector3(totalForwardRotation, currentSteerAngle, 0);
     }
 }

@@ -3,6 +3,7 @@ using UnityEngine;
 
 public class LapCounter : MonoBehaviour
 {
+    [SerializeField] SimpleCarController CarFinish;
     public Ui Ui;
     [Header("Настройки гонки")]
     public int totalLapsToWin = 1;
@@ -12,13 +13,13 @@ public class LapCounter : MonoBehaviour
     public int currentLap = 0;
     public int nextRequiredCheckpointID = 1;
     public Transform lastCheckpoint;
-    private bool hasFinished = false;
+    public bool hasFinished {get; set;} = false;
 
     [Header("Время")]
     public float currentLapTime = 0f;
-    public float bestLapTime;
+    public float bestLapTime = 0;
     public float lastLapTime = 0f;
-    private float lapStartTime = 0f;
+    public float lapStartTime = 0f;
     private bool lapStarted = false;
     public float lowTimeLap;
 
@@ -52,12 +53,17 @@ public class LapCounter : MonoBehaviour
         {
             if (nextRequiredCheckpointID > totalCheckpointsOnTrack)
             {
-                    
+
+                if (currentLapTime < bestLapTime)
+                    bestLapTime = currentLapTime;
+                if(currentLapTime > lowTimeLap)
+                    lowTimeLap = currentLapTime;
+                if(currentLap == 1)
+                {
+                    bestLapTime = currentLapTime;
+                }
+
                 lastLapTime = Time.time - lapStartTime;
-                if (lastLapTime < bestLapTime)
-                    bestLapTime = lastLapTime;
-                if(lastLapTime > lowTimeLap)
-                    lowTimeLap = lastLapTime;
                 currentLap++;
                 lapStartTime = Time.time;
                 currentLapTime = 0f;
@@ -67,9 +73,8 @@ public class LapCounter : MonoBehaviour
                 if (currentLap > totalLapsToWin)
                 {
                     Time.timeScale = 0;
-                    SimpleCarController CarFinish = GetComponent<SimpleCarController>();
                     hasFinished = true;
-                    Ui.Finish(CarFinish.playerIndex);
+                    Ui.Finish(CarFinish.PlayerIndex);
                 }
                     
             }

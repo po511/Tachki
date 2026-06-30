@@ -3,8 +3,8 @@ using UnityEngine;
 public class Respawn : MonoBehaviour
 {
     public LapCounter lapCounter;
-    private Vector3 startPos;
-    private Quaternion startRot;
+    public Vector3 startPos;
+    public Quaternion startRot;
 
     void Start()
     {
